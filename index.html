@@ -223,7 +223,7 @@ function badgeCls(r) {
 }
 
 async function fetchCalls() {
-  const res = await fetch('/api/calls');
+  const res = await fetch(`https://api.vapi.ai/call?assistantId=714f2f98-cb33-4e66-90ce-c2d570ba6c6e&limit=100`, { headers: { Authorization: 'Bearer 42eceddd-7433-4781-a9dc-c6db241361b7' } });
   if (!res.ok) throw new Error(`Vapi error ${res.status}`);
   const d = await res.json();
   return Array.isArray(d) ? d : (d.results || []);
