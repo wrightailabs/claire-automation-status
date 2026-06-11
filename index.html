@@ -200,7 +200,7 @@
 </div>
 
 <script>
-const VAPI_KEY = '42eceddd-7433-4781-a9dc-c6db241361b7';
+
 const ASSISTANT_ID = '714f2f98-cb33-4e66-90ce-c2d570ba6c6e';
 
 function getDuration(c) {
@@ -223,7 +223,7 @@ function badgeCls(r) {
 }
 
 async function fetchCalls() {
-  const res = await fetch(`https://api.vapi.ai/call?assistantId=${ASSISTANT_ID}&limit=100`, { headers: { Authorization: `Bearer ${VAPI_KEY}` } });
+  const res = await fetch('/api/calls');
   if (!res.ok) throw new Error(`Vapi error ${res.status}`);
   const d = await res.json();
   return Array.isArray(d) ? d : (d.results || []);
