@@ -1,0 +1,67 @@
+{
+  "generated_at": "2026-06-11T15:46:38.476714+00:00",
+  "total_jobs": 5956,
+  "active_jobs": 1587,
+  "active_pipeline_value": 1646716.83,
+  "completed_revenue": 5093278.32,
+  "total_outstanding_invoices": 0.0,
+  "pipeline": [
+    {
+      "status": "needs scheduling",
+      "label": "New / Unscheduled",
+      "count": 748,
+      "revenue": 867127.34,
+      "outstanding": 437920.64
+    },
+    {
+      "status": "scheduled",
+      "label": "Scheduled",
+      "count": 439,
+      "revenue": 563527.86,
+      "outstanding": 274915.27
+    },
+    {
+      "status": "in progress",
+      "label": "In Progress",
+      "count": 400,
+      "revenue": 216061.63,
+      "outstanding": 68336.7
+    },
+    {
+      "status": "complete unrated",
+      "label": "Completed",
+      "count": 1130,
+      "revenue": 1355477.3,
+      "outstanding": 66185.27
+    },
+    {
+      "status": "complete rated",
+      "label": "Completed (Rated)",
+      "count": 2508,
+      "revenue": 3737801.02,
+      "outstanding": 128058.69
+    },
+    {
+      "status": "pro canceled",
+      "label": "Canceled",
+      "count": 587,
+      "revenue": 983211.8,
+      "outstanding": 970587.53
+    },
+    {
+      "status": "user canceled",
+      "label": "Canceled by Customer",
+      "count": 144,
+      "revenue": 147649.49,
+      "outstanding": 137081.49
+    }
+  ],
+  "invoices": [
+    {
+      "status": "none",
+      "label": "No Invoice",
+      "count": 5956,
+      "outstanding": 2083085.59
+    }
+  ]
+}
