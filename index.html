@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Claire Automation Status | Weather Masters of Georgia</title>
+  <title>Weather Masters — Operations Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     :root {
@@ -31,12 +31,12 @@
 
     /* Header */
     .header {
-      background: linear-gradient(135deg, #1a56db 0%, #1e40af 100%);
+      background: linear-gradient(135deg, #1E2A5E 0%, #2a3a7a 100%);
       color: white; padding: 20px 24px;
       display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
     }
     .header-left { display: flex; align-items: center; gap: 14px; }
-    .header-logo { width: 46px; height: 46px; border-radius: 12px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 24px; }
+    .header-logo { height: 46px; border-radius: 10px; background: #ffffff; display: flex; align-items: center; justify-content: center; padding: 6px 10px; }
     .header-title { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
     .header-sub { font-size: 13px; opacity: 0.75; margin-top: 2px; }
     .live-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.15); border-radius: 20px; padding: 5px 14px; font-size: 13px; font-weight: 700; }
@@ -141,6 +141,13 @@
     .outcome-count { font-weight: 700; font-size: 14px; min-width: 24px; text-align: right; }
 
     /* Loading */
+
+    .filter-bar { display:flex; gap:8px; flex-wrap:nowrap; overflow-x:auto; margin-bottom:16px; align-items:center; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+    .filter-bar::-webkit-scrollbar { display:none; }
+    .filter-btn { padding:5px 10px; border-radius:20px; border:1.5px solid var(--border); background:#fff; font-size:11px; font-weight:700; cursor:pointer; color:var(--text-muted); transition:all 0.15s; white-space:nowrap; }
+    .filter-btn:hover { border-color:var(--blue); color:var(--blue); }
+    .filter-btn.active { background:#1E2A5E; border-color:#1E2A5E; color:#fff; }
+    .filter-label { font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-right:4px; }
     .loading { text-align: center; padding: 60px 20px; color: var(--text-muted); }
     .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -157,10 +164,10 @@
 
 <div class="header">
   <div class="header-left">
-    <div class="header-logo" style="font-size:15px;font-weight:800;letter-spacing:-0.5px;">CA</div>
+    <div class="header-logo" style="width:auto;height:46px;padding:6px 10px;"><img src="https://www.weathermastersga.com/wp-content/uploads/2025/04/svgviewer-output-1-min.png" style="height:34px;width:auto;object-fit:contain;" alt="Weather Masters" /></div>
     <div>
-      <div class="header-title">Claire Automation</div>
-      <div class="header-sub">Weather Masters of Georgia — Status Dashboard</div>
+      <div class="header-title">Weather Masters of Georgia</div>
+      <div class="header-sub">AI Operations Dashboard · Powered by Claire Automation</div>
     </div>
   </div>
   <div>
@@ -172,6 +179,17 @@
 <div class="container">
   <div id="loading" class="loading"><div class="spinner"></div>Loading Claire's data...</div>
   <div id="dashboard" style="display:none">
+
+
+    <!-- Date range filter -->
+    <div class="filter-bar">
+      <span class="filter-label">Range:</span>
+      <button class="filter-btn active" onclick="setRange(7,this)">7 Days</button>
+      <button class="filter-btn" onclick="setRange(30,this)">30 Days</button>
+      <button class="filter-btn" onclick="setRange(60,this)">60 Days</button>
+      <button class="filter-btn" onclick="setRange(90,this)">90 Days</button>
+      <button class="filter-btn" onclick="setRange(0,this)">All Time</button>
+    </div>
 
     <!-- Stat cards -->
     <div class="stats-grid" id="stats-grid"></div>
@@ -196,7 +214,7 @@
 </div>
 
 <div class="footer">
-  Powered by <strong>Wright AI Labs</strong> · Claire Automation v1.0 · Auto-refreshes every 5 minutes
+  Weather Masters of Georgia · AI Operations Dashboard · <span style="opacity:0.7">Powered by Wright AI Labs</span> · Auto-refreshes every 5 minutes
 </div>
 
 <script>
@@ -222,11 +240,29 @@ function badgeCls(r) {
   return { 'customer-ended-call':'badge-blue','assistant-forwarded-call':'badge-green','silence-timed-out':'badge-orange' }[r] || 'badge-gray';
 }
 
+let filterDays = 7;
+
+function setRange(days, btn) {
+  filterDays = days;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  load();
+}
+
 async function fetchCalls() {
-  const res = await fetch(`https://api.vapi.ai/call?assistantId=714f2f98-cb33-4e66-90ce-c2d570ba6c6e&limit=100`, { headers: { Authorization: 'Bearer 42eceddd-7433-4781-a9dc-c6db241361b7' } });
+  const res = await fetch(`https://api.vapi.ai/call?assistantId=714f2f98-cb33-4e66-90ce-c2d570ba6c6e&limit=500`, { headers: { Authorization: 'Bearer 42eceddd-7433-4781-a9dc-c6db241361b7' } });
   if (!res.ok) throw new Error(`Vapi error ${res.status}`);
   const d = await res.json();
-  return Array.isArray(d) ? d : (d.results || []);
+  let calls = Array.isArray(d) ? d : (d.results || []);
+  if (filterDays > 0) {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - filterDays);
+    calls = calls.filter(c => {
+      const ts = c.startedAt || c.createdAt || c.endedAt;
+      return ts && new Date(ts) >= cutoff;
+    });
+  }
+  return calls;
 }
 
 function buildStats(calls) {
@@ -250,18 +286,45 @@ function buildCallRows(calls) {
     const dur = getDuration(c);
     const fullSummary = c.summary || 'No summary available.';
     const id = `cs-${callExpandCounter++}`;
+    const recUrl = c.recordingUrl || (c.artifact && c.artifact.recordingUrl) || '';
+    const audioId = `audio-${callExpandCounter}`;
+    const listenBtn = recUrl ? `
+      <button onclick="event.stopPropagation();toggleAudio('${audioId}')" style="
+        display:inline-flex;align-items:center;gap:5px;margin-top:8px;
+        background:#1E2A5E;color:white;border:none;border-radius:20px;
+        padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer;
+      ">🎧 Listen</button>
+      <div id="${audioId}" style="display:none;margin-top:8px;">
+        <audio controls style="width:100%;border-radius:8px;" preload="none">
+          <source src="${recUrl}" type="audio/wav">
+        </audio>
+      </div>` : '';
     return `<div class="call-row" onclick="toggleCallSummary('${id}')">
       <div class="call-dot" style="background:${outcomeColor(c.endedReason)}"></div>
       <div class="call-info">
         <div class="call-date">${fmtDate(c.createdAt)} · ${dur>0?fmtDur(dur):'n/a'} <span style="font-size:11px;color:var(--text-muted);margin-left:4px">tap to expand</span></div>
         <div class="call-summary" id="${id}">${fullSummary}</div>
-        <div class="call-meta">
+        ${listenBtn}
+        <div class="call-meta" style="margin-top:6px">
           <span class="badge ${badgeCls(c.endedReason)}">${outcomeLabel(c.endedReason)}</span>
           ${c.type?`<span class="badge badge-gray">Inbound</span>`:''}
         </div>
       </div>
     </div>`;
   }).join('');
+}
+
+function toggleAudio(id) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function toggleRecentCalls(header) {
+  const body = header.nextElementSibling;
+  const chevron = header.querySelector('.rc-chevron');
+  const open = body.style.display === 'none';
+  body.style.display = open ? 'block' : 'none';
+  chevron.style.transform = open ? 'rotate(180deg)' : '';
 }
 
 function toggleCallSummary(id) {
@@ -319,8 +382,12 @@ function buildTasks(calls) {
         </div>
         <div style="padding:10px 20px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Outcomes</div>
         ${buildOutcomeRows(calls)}
-        <div style="padding:10px 20px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Recent Calls</div>
-        ${buildCallRows(calls)}
+        <div onclick="toggleRecentCalls(this)" style="padding:10px 20px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none">
+          <span>Recent Calls</span><span class="rc-chevron" style="font-size:14px;transition:transform 0.2s">▼</span>
+        </div>
+        <div class="recent-calls-body" style="display:none">
+          ${buildCallRows(calls)}
+        </div>
       `
     },
     {
@@ -328,7 +395,7 @@ function buildTasks(calls) {
       icon: '📋', iconCls: 'orange',
       name: 'Unclosed Estimate Follow-Up',
       desc: 'Calls customers on open estimates to drive approval',
-      status: 'soon', statusLabel: '⚡ LAUNCHING',
+      status: 'live', statusLabel: '● LIVE',
       statVal: '73', statLabel: 'open estimates',
       body: `
         <div class="opportunity-panel">
@@ -339,7 +406,7 @@ function buildTasks(calls) {
           <div class="opp-row"><div class="opp-label">Claire's Role</div><div style="font-size:13px;text-align:right">Call → Confirm interest → Update HCP status</div></div>
           <div style="margin-top:16px">
             <div style="margin-top:12px;padding:12px;background:var(--orange-light);border-radius:8px;font-size:13px;color:var(--orange);font-weight:600">
-              ⚡ Phase 1 of 3 — Currently in development
+              ● Now running automatically — 4x daily
             </div>
           </div>
         </div>
@@ -350,7 +417,7 @@ function buildTasks(calls) {
       icon: '🎯', iconCls: 'blue',
       name: 'New Job Pipeline Calls',
       desc: 'Qualifies & schedules new inbound job requests',
-      status: 'soon', statusLabel: '⚡ LAUNCHING',
+      status: 'live', statusLabel: '● LIVE',
       statVal: '84', statLabel: 'jobs in queue',
       body: `
         <div class="opportunity-panel">
@@ -361,7 +428,7 @@ function buildTasks(calls) {
           <div class="opp-row"><div class="opp-label">Claire's Role</div><div style="font-size:13px;text-align:right">Call → Qualify → Book appointment in HCP</div></div>
           <div style="margin-top:16px">
             <div style="margin-top:12px;padding:12px;background:var(--blue-light);border-radius:8px;font-size:13px;color:var(--blue);font-weight:600">
-              ⚡ Phase 1 of 3 — Currently in development
+              ● Now running automatically — 4x daily
             </div>
           </div>
         </div>
@@ -372,19 +439,28 @@ function buildTasks(calls) {
       icon: '💰', iconCls: 'red',
       name: 'Collections Follow-Up',
       desc: 'Follows up on unpaid invoices to recover revenue',
-      status: 'soon', statusLabel: '⚡ LAUNCHING',
-      statVal: '$240K', statLabel: 'open invoices',
+      status: 'live', statusLabel: '● LIVE',
+      statVal: '$180K', statLabel: 'being recovered',
       body: `
         <div class="opportunity-panel">
           <div style="font-weight:700;font-size:14px;margin-bottom:12px">🥉 Bronze Priority — Revenue Recovery</div>
-          <div class="opp-row"><div class="opp-label">Open Invoices</div><div><span class="opp-val">188</span></div></div>
-          <div class="opp-row"><div class="opp-label">Total Outstanding</div><div><span class="opp-val" style="color:var(--red)">$240,149</span></div></div>
-          <div class="opp-row"><div class="opp-label">Past Due</div><div><span class="opp-val" style="color:var(--red)">$172,093</span></div></div>
+          <div class="opp-row"><div class="opp-label">Overdue Invoices</div><div><span class="opp-val">164</span></div></div>
+          <div class="opp-row"><div class="opp-label">Total Outstanding</div><div><span class="opp-val" style="color:var(--red)">$179,512</span></div></div>
           <div class="opp-row"><div class="opp-label">Claire's Role</div><div style="font-size:13px;text-align:right">Call → Remind → Confirm payment intent</div></div>
+
           <div style="margin-top:16px">
-            <div style="margin-top:12px;padding:12px;background:var(--red-light);border-radius:8px;font-size:13px;color:var(--red);font-weight:600">
-              ⚡ Phase 1 of 3 — Currently in development
+            <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Calls Attempted</div>
+            <div id="collections-progress-wrap" style="background:#f3f4f6;border-radius:8px;height:18px;overflow:hidden;margin-bottom:6px">
+              <div id="collections-progress-bar" style="height:100%;background:var(--red);border-radius:8px;transition:width 0.5s;width:0%"></div>
             </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted)">
+              <span id="collections-called">Loading...</span>
+              <span>164 total</span>
+            </div>
+          </div>
+
+          <div style="margin-top:12px;padding:12px;background:var(--red-light);border-radius:8px;font-size:13px;color:var(--red);font-weight:600">
+            ● Now running automatically — 4x daily (8 AM – 8 PM)
           </div>
         </div>
       `
@@ -455,10 +531,11 @@ function toggleTask(id) {
   document.getElementById(`task-${id}`).classList.toggle('open');
 }
 
+const PIPELINE_DATA = {"generated_at":"2026-06-11T15:46:38.476714+00:00","total_jobs":5956,"active_jobs":1587,"active_pipeline_value":1646716.83,"completed_revenue":5093278.32,"total_outstanding_invoices":0.0,"pipeline":[{"status":"needs scheduling","label":"New / Unscheduled","count":748,"revenue":867127.34,"outstanding":437920.64},{"status":"scheduled","label":"Scheduled","count":439,"revenue":563527.86,"outstanding":274915.27},{"status":"in progress","label":"In Progress","count":400,"revenue":216061.63,"outstanding":68336.7},{"status":"complete unrated","label":"Completed","count":1130,"revenue":1355477.3,"outstanding":66185.27},{"status":"complete rated","label":"Completed (Rated)","count":2508,"revenue":3737801.02,"outstanding":128058.69},{"status":"pro canceled","label":"Canceled","count":587,"revenue":983211.8,"outstanding":970587.53},{"status":"user canceled","label":"Canceled by Customer","count":144,"revenue":147649.49,"outstanding":137081.49}],"invoices":[{"status":"none","label":"No Invoice","count":5956,"outstanding":2083085.59}]};
+
 async function loadPipeline() {
   try {
-    const res = await fetch('./pipeline.json?t=' + Date.now());
-    const d = await res.json();
+    const d = PIPELINE_DATA;
 
     const stageColors = {
       'needs scheduling': '#1a56db',
@@ -519,6 +596,7 @@ async function load() {
     buildChart(calls);
     buildTasks(calls);
     await loadPipeline();
+    await loadCollectionsProgress();
     document.getElementById('loading').style.display = 'none';
     document.getElementById('dashboard').style.display = 'block';
     document.getElementById('last-updated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
@@ -526,6 +604,28 @@ async function load() {
     document.getElementById('task-inbound').classList.add('open');
   } catch(e) {
     document.getElementById('loading').innerHTML = `<div style="color:#dc2626;padding:20px">⚠️ ${e.message}</div>`;
+  }
+}
+
+async function loadCollectionsProgress() {
+  try {
+    const res = await fetch(`https://api.vapi.ai/call?assistantId=43e195b4-7eba-425a-ad85-58f12e9776c0&limit=250`, {
+      headers: { 'Authorization': `Bearer ${VAPI_KEY}` }
+    });
+    const data = await res.json();
+    const calls = Array.isArray(data) ? data : (data.calls || []);
+    const total = 164;
+    const attempted = calls.length;
+    const connected = calls.filter(c => c.endedReason === 'customer-ended-call' || c.endedReason === 'assistant-forwarded-call').length;
+    const pct = Math.min(Math.round((attempted / total) * 100), 100);
+
+    const bar = document.getElementById('collections-progress-bar');
+    const label = document.getElementById('collections-called');
+    if (bar) bar.style.width = pct + '%';
+    if (label) label.textContent = `${attempted} called · ${connected} connected (${pct}%)`;
+  } catch(e) {
+    const label = document.getElementById('collections-called');
+    if (label) label.textContent = 'Progress unavailable';
   }
 }
 
