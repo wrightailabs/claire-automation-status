@@ -1,0 +1,9 @@
+{
+  "balance_usd": 62.46,
+  "balance_updated": "2026-06-15",
+  "minutes_this_week": 123,
+  "calls_june": 0,
+  "estimated_cost_june_usd": 2.29,
+  "rate_per_min": 0.05,
+  "notes": "Balance read manually from Vapi dashboard June 15. API does not expose balance endpoint."
+}
