@@ -190,6 +190,13 @@
       <button class="filter-btn" onclick="setRange(90,this)">90 Days</button>
       <button class="filter-btn" onclick="setRange(0,this)">All Time</button>
     </div>
+    <!-- Recording filter -->
+    <div class="filter-bar" style="margin-top:-8px;">
+      <span class="filter-label">Show:</span>
+      <button class="filter-btn active" id="rec-filter-all" onclick="setRecFilter('all',this)">All Calls</button>
+      <button class="filter-btn" id="rec-filter-rec" onclick="setRecFilter('recordings',this)">🎧 With Recordings Only</button>
+      <button class="filter-btn" id="rec-filter-inbound" onclick="setRecFilter('inbound',this)">📞 Inbound Only</button>
+    </div>
 
     <!-- Stat cards -->
     <div class="stats-grid" id="stats-grid"></div>
@@ -271,6 +278,13 @@ function badgeCls(r) {
 }
 
 let filterDays = 7;
+let recFilter = 'all';
+function setRecFilter(mode, btn) {
+  recFilter = mode;
+  document.querySelectorAll('#rec-filter-all,#rec-filter-rec,#rec-filter-inbound').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAll();
+}
 
 function setRange(days, btn) {
   filterDays = days;
@@ -312,7 +326,13 @@ function buildStats(calls) {
 
 let callExpandCounter = 0;
 function buildCallRows(calls) {
-  return [...calls].sort((a,b) => new Date(b.createdAt)-new Date(a.createdAt)).slice(0,15).map(c => {
+  let filtered = [...calls].sort((a,b) => new Date(b.createdAt)-new Date(a.createdAt));
+  if (recFilter === 'recordings') {
+    filtered = filtered.filter(c => c.recordingUrl || (c.artifact && c.artifact.recordingUrl));
+  } else if (recFilter === 'inbound') {
+    filtered = filtered.filter(c => c.type === 'inboundPhoneCall' || c.type === 'webCall');
+  }
+  return filtered.slice(0,20).map(c => {
     const dur = getDuration(c);
     const fullSummary = c.summary || 'No summary available.';
     const id = `cs-${callExpandCounter++}`;
