@@ -1,1 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Claire AI Automation Status — Weather Masters</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --blue: #1a56db;
+      --blue-light: #e8f0fe;
+      --green: #0e9f6e;
+      --green-light: #def7ec;
+      --orange: #ff5a1f;
+      --orange-light: #fde8d8;
+      --purple: #7c3aed;
+      --purple-light: #ede9fe;
+      --yellow: #d97706;
+      --yellow-light: #fef3c7;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --gray: #6b7280;
+      --bg: #f3f4f6;
+      --card: #ffffff;
+      --border: #e5e7eb;
+      --text: #111827;
+      --text-muted: #6b7280;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
 
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #1E2A5E 0%, #2a3a7a 100%);
+      color: white; padding: 20px 24px;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .header-logo { height: 46px; border-radius: 10px; background: #ffffff; display: flex; align-items: center; justify-content: center; padding: 6px 10px; }
+    .header-title { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+    .header-sub { font-size: 13px; opacity: 0.75; margin-top: 2px; }
+    .live-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.15); border-radius: 20px; padding: 5px 14px; font-size: 13px; font-weight: 700; }
+    .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #34d399; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .last-updated { font-size: 12px; opacity: 0.65; margin-top: 4px; text-align: right; }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+
+    /* Stat grid */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; position: relative; overflow: hidden; }
+    .stat-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 12px 12px 0 0; }
+    .stat-card.blue::after { background: var(--blue); }
+    .stat-card.green::after { background: var(--green); }
+    .stat-card.orange::after { background: var(--orange); }
+    .stat-card.purple::after { background: var(--purple); }
+    .stat-card.red::after { background: var(--red); }
+    .stat-icon { font-size: 26px; margin-bottom: 8px; }
+    .stat-value { font-size: 30px; font-weight: 800; line-height: 1.1; }
+    .stat-label { font-size: 12px; color: var(--text-muted); margin-top: 3px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+    .stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
+    /* Section */
+    .section-title { font-size: 13px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; }
+
+    /* Accordion task cards */
+    .task-grid { display: flex; flex-direction: column; gap: 12px; }
+    .task-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .task-header {
+      padding: 16px 20px; cursor: pointer; display: flex; align-items: center; gap: 12px;
+      user-select: none; transition: background 0.15s;
+    }
+    .task-header:hover { background: #f9fafb; }
+    .task-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .task-icon.blue { background: var(--blue-light); }
+    .task-icon.green { background: var(--green-light); }
+    .task-icon.orange { background: var(--orange-light); }
+    .task-icon.purple { background: var(--purple-light); }
+    .task-icon.yellow { background: var(--yellow-light); }
+    .task-icon.red { background: var(--red-light); }
+    .task-info { flex: 1; }
+    .task-name { font-weight: 700; font-size: 15px; }
+    .task-desc { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+    .task-right { display: flex; align-items: center; gap: 10px; }
+    .task-stat { text-align: right; }
+    .task-stat-val { font-size: 20px; font-weight: 800; }
+    .task-stat-label { font-size: 11px; color: var(--text-muted); }
+    .status-badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+    .status-live { background: var(--green-light); color: var(--green); }
+    .status-soon { background: var(--yellow-light); color: var(--yellow); }
+    .status-building { background: var(--purple-light); color: var(--purple); }
+    .chevron { font-size: 14px; color: var(--text-muted); transition: transform 0.2s; }
+    .task-card.open .chevron { transform: rotate(180deg); }
+
+    /* Task body */
+    .task-body { display: none; border-top: 1px solid var(--border); padding: 0; }
+    .task-card.open .task-body { display: block; }
+
+    /* Call log inside accordion */
+    .call-row { padding: 12px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; gap: 12px; }
+    .call-row:last-child { border-bottom: none; }
+    .call-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+    .call-info { flex: 1; min-width: 0; }
+    .call-date { font-size: 12px; color: var(--text-muted); }
+    .call-summary { font-size: 13px; margin-top: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
+    .call-summary.expanded { display: block; -webkit-line-clamp: unset; }
+    .call-row { cursor: pointer; transition: background 0.1s; }
+    .call-row:hover { background: #f9fafb; }
+    .call-meta { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+    .badge { font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 600; }
+    .badge-blue { background: var(--blue-light); color: var(--blue); }
+    .badge-green { background: var(--green-light); color: var(--green); }
+    .badge-orange { background: var(--orange-light); color: var(--orange); }
+    .badge-gray { background: #f3f4f6; color: var(--gray); }
+    .badge-purple { background: var(--purple-light); color: var(--purple); }
+
+    /* Opportunity section inside accordion */
+    .opportunity-panel { padding: 20px; background: #f9fafb; }
+    .opp-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .opp-row:last-child { border-bottom: none; }
+    .opp-label { font-size: 14px; }
+    .opp-val { font-weight: 700; font-size: 15px; }
+    .opp-tag { font-size: 11px; padding: 3px 8px; border-radius: 20px; font-weight: 600; }
+    .coming-soon-banner { padding: 20px; text-align: center; }
+    .coming-soon-banner .cs-icon { font-size: 36px; margin-bottom: 10px; }
+    .coming-soon-banner .cs-title { font-weight: 700; font-size: 16px; margin-bottom: 6px; }
+    .coming-soon-banner .cs-desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+    .progress-bar-wrap { height: 8px; background: var(--border); border-radius: 4px; margin-top: 12px; overflow: hidden; }
+    .progress-bar { height: 100%; border-radius: 4px; }
+
+    /* Chart */
+    .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 12px; }
+
+    /* Outcome */
+    .outcome-item { display: flex; align-items: center; padding: 10px 20px; border-bottom: 1px solid var(--border); gap: 10px; }
+    .outcome-item:last-child { border-bottom: none; }
+    .outcome-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .outcome-label { flex: 1; font-size: 13px; }
+    .outcome-bar-wrap { width: 100px; height: 6px; background: #f3f4f6; border-radius: 3px; overflow: hidden; }
+    .outcome-bar { height: 100%; border-radius: 3px; }
+    .outcome-count { font-weight: 700; font-size: 14px; min-width: 24px; text-align: right; }
+
+    /* Loading */
+
+    .filter-bar { display:flex; gap:8px; flex-wrap:nowrap; overflow-x:auto; margin-bottom:16px; align-items:center; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+    .filter-bar::-webkit-scrollbar { display:none; }
+    .filter-btn { padding:5px 10px; border-radius:20px; border:1.5px solid var(--border); background:#fff; font-size:11px; font-weight:700; cursor:pointer; color:var(--text-muted); transition:all 0.15s; white-space:nowrap; }
+    .filter-btn:hover { border-color:var(--blue); color:var(--blue); }
+    .filter-btn.active { background:#1E2A5E; border-color:#1E2A5E; color:#fff; }
+    .filter-label { font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-right:4px; }
+    .loading { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+    .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .footer { text-align: center; padding: 24px; color: var(--text-muted); font-size: 12px; border-top: 1px solid var(--border); margin-top: 8px; }
+
+    @media (max-width: 600px) {
+      .task-stat { display: none; }
+      .header-title { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="header-logo" style="width:auto;height:46px;padding:6px 10px;"><img src="https://www.weathermastersga.com/wp-content/uploads/2025/04/svgviewer-output-1-min.png" style="height:34px;width:auto;object-fit:contain;" alt="Weather Masters" /></div>
+    <div>
+      <div class="header-title">Weather Masters of Georgia</div>
+      <div class="header-sub">AI Operations Dashboard · Powered by Claire Automation</div>
+    </div>
+  </div>
+  <div>
+    <div class="live-badge"><div class="live-dot"></div> LIVE</div>
+    <div class="last-updated" id="last-updated">Loading...</div>
+  </div>
+</div>
+
+<div class="container">
+  <div id="loading" class="loading"><div class="spinner"></div>Loading Claire's data...</div>
+  <div id="dashboard" style="display:none">
+
+
+    <!-- Date range filter -->
+    <div class="filter-bar">
+      <span class="filter-label">Range:</span>
+      <button class="filter-btn active" onclick="setRange(7,this)">7 Days</button>
+      <button class="filter-btn" onclick="setRange(30,this)">30 Days</button>
+      <button class="filter-btn" onclick="setRange(60,this)">60 Days</button>
+      <button class="filter-btn" onclick="setRange(90,this)">90 Days</button>
+      <button class="filter-btn" onclick="setRange(0,this)">All Time</button>
+    </div>
+    <!-- Recording filter -->
+    <div class="filter-bar" style="margin-top:-8px;">
+      <span class="filter-label">Show:</span>
+      <button class="filter-btn active" id="rec-filter-all" onclick="setRecFilter('all',this)">All Calls</button>
+      <button class="filter-btn" id="rec-filter-rec" onclick="setRecFilter('recordings',this)">🎧 With Recordings Only</button>
+      <button class="filter-btn" id="rec-filter-inbound" onclick="setRecFilter('inbound',this)">📞 Inbound Only</button>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="stats-grid" id="stats-grid"></div>
+
+    <!-- Calls chart -->
+    <div class="chart-card">
+      <div class="section-title">📅 Call Activity by Day</div>
+      <canvas id="callsChart" height="120"></canvas>
+    </div>
+
+    <!-- Pipeline section -->
+    <div class="section-title" style="margin-top:8px">🔧 HCP Job Pipeline (Live)</div>
+    <div class="chart-card" style="margin-bottom:12px" id="pipeline-section">
+      <div style="text-align:center;color:var(--text-muted);font-size:13px;padding:12px">Loading pipeline data...</div>
+    </div>
+
+    <!-- Task accordions -->
+    <div class="section-title" style="margin-top:8px">⚡ Claire's Task Areas</div>
+    <div class="task-grid" id="task-grid"></div>
+
+  </div>
+</div>
+
+<div class="footer">
+  Weather Masters of Georgia · AI Operations Dashboard · <span style="opacity:0.7">Powered by Wright AI Labs</span> · Auto-refreshes every 5 minutes
+</div>
+
+<script>
+
+const ASSISTANT_ID = '714f2f98-cb33-4e66-90ce-c2d570ba6c6e';
+
+function getDuration(c) {
+  if (!c.startedAt || !c.endedAt) return 0;
+  return Math.round((new Date(c.endedAt) - new Date(c.startedAt)) / 1000);
+}
+function fmtDur(s) { return s < 60 ? `${s}s` : `${Math.floor(s/60)}m ${s%60}s`; }
+function fmtDate(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleDateString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+function outcomeLabel(r) {
+  return { 'customer-ended-call':'Customer Engaged','assistant-forwarded-call':'Forwarded to Team','silence-timed-out':'No Response','twilio-failed-to-connect-call':'Failed to Connect','twilio-reported-customer-misdialed':'Misdial' }[r] || r || 'Unknown';
+}
+function outcomeColor(r) {
+  return { 'customer-ended-call':'#1a56db','assistant-forwarded-call':'#0e9f6e','silence-timed-out':'#f59e0b','twilio-failed-to-connect-call':'#dc2626','twilio-reported-customer-misdialed':'#9ca3af' }[r] || '#9ca3af';
+}
+function badgeCls(r) {
+  return { 'customer-ended-call':'badge-blue','assistant-forwarded-call':'badge-green','silence-timed-out':'badge-orange' }[r] || 'badge-gray';
+}
+
+let filterDays = 7;
+let recFilter = 'all';
+function setRecFilter(mode, btn) {
+  recFilter = mode;
+  document.querySelectorAll('#rec-filter-all,#rec-filter-rec,#rec-filter-inbound').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAll();
+}
+
+function setRange(days, btn) {
+  filterDays = days;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  load();
+}
+
+async function fetchCalls() {
+  const res = await fetch(`https://api.vapi.ai/call?assistantId=714f2f98-cb33-4e66-90ce-c2d570ba6c6e&limit=500`, { headers: { Authorization: 'Bearer 42eceddd-7433-4781-a9dc-c6db241361b7' } });
+  if (!res.ok) throw new Error(`Vapi error ${res.status}`);
+  const d = await res.json();
+  let calls = Array.isArray(d) ? d : (d.results || []);
+  if (filterDays > 0) {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - filterDays);
+    calls = calls.filter(c => {
+      const ts = c.startedAt || c.createdAt || c.endedAt;
+      return ts && new Date(ts) >= cutoff;
+    });
+  }
+  return calls;
+}
+
+function buildStats(calls) {
+  const durs = calls.map(getDuration).filter(d => d > 0);
+  const avg = durs.length ? Math.round(durs.reduce((a,b)=>a+b,0)/durs.length) : 0;
+  const engaged = calls.filter(c => c.endedReason === 'customer-ended-call').length;
+  const forwarded = calls.filter(c => c.endedReason === 'assistant-forwarded-call').length;
+  const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate()-7);
+  const thisWeek = calls.filter(c => new Date(c.createdAt) > weekAgo).length;
+  return [
+    { icon:'📞', value: calls.length, label:'Total Calls Handled', sub:`${thisWeek} this week`, cls:'blue' },
+    { icon:'💬', value: `${Math.round(engaged/calls.length*100)}%`, label:'Engagement Rate', sub:`${engaged} active conversations`, cls:'green' },
+    { icon:'⏱️', value: fmtDur(avg), label:'Avg Call Duration', sub:`Longest: ${fmtDur(Math.max(...durs,0))}`, cls:'orange' },
+    { icon:'↗️', value: forwarded, label:'Forwarded to Team', sub:'Warm handoffs completed', cls:'purple' },
+  ];
+}
+
+let callExpandCounter = 0;
+function buildCallRows(calls) {
+  let filtered = [...calls].sort((a,b) => new Date(b.createdAt)-new Date(a.createdAt));
+  if (recFilter === 'recordings') {
+    filtered = filtered.filter(c => c.recordingUrl || (c.artifact && c.artifact.recordingUrl));
+  } else if (recFilter === 'inbound') {
+    filtered = filtered.filter(c => c.type === 'inboundPhoneCall' || c.type === 'webCall');
+  }
+  return filtered.slice(0,20).map(c => {
+    const dur = getDuration(c);
+    const fullSummary = c.summary || 'No summary available.';
+    const id = `cs-${callExpandCounter++}`;
+    const recUrl = c.recordingUrl || (c.artifact && c.artifact.recordingUrl) || '';
+    const audioId = `audio-${callExpandCounter}`;
+    const listenBtn = recUrl ? `
+      <button onclick="event.stopPropagation();toggleAudio('${audioId}')" style="
+        display:inline-flex;align-items:center;gap:5px;margin-top:8px;
+        background:#1E2A5E;color:white;border:none;border-radius:20px;
+        padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer;
+      ">🎧 Listen</button>
+      <div id="${audioId}" style="display:none;margin-top:8px;">
+        <audio controls style="width:100%;border-radius:8px;" preload="none">
+          <source src="${recUrl}" type="audio/wav">
+        </audio>
+      </div>` : '';
+    return `<div class="call-row" onclick="toggleCallSummary('${id}')">
+      <div class="call-dot" style="background:${outcomeColor(c.endedReason)}"></div>
+      <div class="call-info">
+        <div class="call-date">${fmtDate(c.createdAt)} · ${dur>0?fmtDur(dur):'n/a'} <span style="font-size:11px;color:var(--text-muted);margin-left:4px">tap to expand</span></div>
+        <div class="call-summary" id="${id}">${fullSummary}</div>
+        ${listenBtn}
+        <div class="call-meta" style="margin-top:6px">
+          <span class="badge ${badgeCls(c.endedReason)}">${outcomeLabel(c.endedReason)}</span>
+          ${c.type?`<span class="badge badge-gray">Inbound</span>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleAudio(id) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function toggleRecentCalls(header) {
+  const body = header.nextElementSibling;
+  const chevron = header.querySelector('.rc-chevron');
+  const open = body.style.display === 'none';
+  body.style.display = open ? 'block' : 'none';
+  chevron.style.transform = open ? 'rotate(180deg)' : '';
+}
+
+function toggleCallSummary(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('expanded');
+}
+
+function buildOutcomeRows(calls) {
+  const counts = {};
+  calls.forEach(c => { const r = c.endedReason||'unknown'; counts[r]=(counts[r]||0)+1; });
+  const max = Math.max(...Object.values(counts));
+  return Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([r,n]) =>
+    `<div class="outcome-item">
+      <div class="outcome-dot" style="background:${outcomeColor(r)}"></div>
+      <div class="outcome-label">${outcomeLabel(r)}</div>
+      <div class="outcome-bar-wrap"><div class="outcome-bar" style="width:${n/max*100}%;background:${outcomeColor(r)}"></div></div>
+      <div class="outcome-count">${n}</div>
+    </div>`
+  ).join('');
+}
+
+function buildChart(calls) {
+  const counts = {};
+  calls.forEach(c => { const d=c.createdAt?c.createdAt.slice(0,10):'?'; counts[d]=(counts[d]||0)+1; });
+  const labels = Object.keys(counts).sort();
+  const values = labels.map(l=>counts[l]);
+  const fmt = labels.map(l => { const d=new Date(l+'T12:00:00'); return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); });
+  new Chart(document.getElementById('callsChart'), {
+    type:'bar',
+    data: { labels: fmt, datasets: [{ label:'Calls', data: values, backgroundColor:'#1a56db', borderRadius:6, borderSkipped:false }] },
+    options: { responsive:true, plugins:{legend:{display:false}}, scales:{ y:{beginAtZero:true,ticks:{stepSize:1}}, x:{grid:{display:false}} } }
+  });
+}
+
+function buildTasks(calls) {
+  const callCount = calls.length;
+  const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate()-7);
+  const weekCalls = calls.filter(c=>new Date(c.createdAt)>weekAgo).length;
+
+  const tasks = [
+    {
+      id: 'inbound',
+      icon: '📞', iconCls: 'blue',
+      name: 'Inbound Call Handling',
+      desc: 'Answers every call 24/7 — new & existing customers',
+      status: 'live', statusLabel: '● LIVE',
+      statVal: callCount, statLabel: 'calls handled',
+      body: `
+        <div style="padding:14px 20px 6px;border-bottom:1px solid var(--border)">
+          <div style="display:flex;gap:20px;flex-wrap:wrap;">
+            <div><span style="font-size:22px;font-weight:800">${calls.filter(c=>c.endedReason==='customer-ended-call').length}</span><div style="font-size:11px;color:var(--text-muted)">Engaged</div></div>
+            <div><span style="font-size:22px;font-weight:800">${calls.filter(c=>c.endedReason==='assistant-forwarded-call').length}</span><div style="font-size:11px;color:var(--text-muted)">Forwarded</div></div>
+            <div><span style="font-size:22px;font-weight:800">${weekCalls}</span><div style="font-size:11px;color:var(--text-muted)">This week</div></div>
+          </div>
+        </div>
+        <div style="padding:10px 20px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Outcomes</div>
+        ${buildOutcomeRows(calls)}
+        <div onclick="toggleRecentCalls(this)" style="padding:10px 20px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none">
+          <span>Recent Calls</span><span class="rc-chevron" style="font-size:14px;transition:transform 0.2s">▼</span>
+        </div>
+        <div class="recent-calls-body" style="display:none">
+          ${buildCallRows(calls)}
+        </div>
+      `
+    },
+    {
+      id: 'estimates',
+      icon: '📋', iconCls: 'orange',
+      name: 'Unclosed Estimate Follow-Up',
+      desc: 'Calls customers on open estimates to drive approval',
+      status: 'live', statusLabel: '● LIVE',
+      statVal: '73', statLabel: 'open estimates',
+      body: `
+        <div class="opportunity-panel">
+          <div style="font-weight:700;font-size:14px;margin-bottom:12px">🥇 Gold Priority — Highest ROI Task</div>
+          <div class="opp-row"><div class="opp-label">Open Estimates</div><div><span class="opp-val">73</span></div></div>
+          <div class="opp-row"><div class="opp-label">Pipeline Value</div><div><span class="opp-val" style="color:var(--orange)">$2,940,824</span></div></div>
+          <div class="opp-row"><div class="opp-label">Avg Estimate Size</div><div><span class="opp-val">$40,285</span></div></div>
+          <div class="opp-row"><div class="opp-label">Claire's Role</div><div style="font-size:13px;text-align:right">Call → Confirm interest → Update HCP status</div></div>
+          <div style="margin-top:16px">
+            <div style="margin-top:12px;padding:12px;background:var(--orange-light);border-radius:8px;font-size:13px;color:var(--orange);font-weight:600">
+              ● Now running automatically — 4x daily
+            </div>
+          </div>
+        </div>
+      `
+    },
+    {
+      id: 'pipeline',
+      icon: '🎯', iconCls: 'blue',
+      name: 'New Job Pipeline Calls',
+      desc: 'Qualifies & schedules new inbound job requests',
+      status: 'live', statusLabel: '● LIVE',
+      statVal: '84', statLabel: 'jobs in queue',
+      body: `
+        <div class="opportunity-panel">
+          <div style="font-weight:700;font-size:14px;margin-bottom:12px">🥈 Silver Priority — Pipeline Engine</div>
+          <div class="opp-row"><div class="opp-label">Unscheduled Jobs</div><div><span class="opp-val">84</span></div></div>
+          <div class="opp-row"><div class="opp-label">Pipeline Value</div><div><span class="opp-val" style="color:var(--blue)">$210,845</span></div></div>
+          <div class="opp-row"><div class="opp-label">Avg Job Size</div><div><span class="opp-val">$2,510</span></div></div>
+          <div class="opp-row"><div class="opp-label">Claire's Role</div><div style="font-size:13px;text-align:right">Call → Qualify → Book appointment in HCP</div></div>
+          <div style="margin-top:16px">
+            <div style="margin-top:12px;padding:12px;background:var(--blue-light);border-radius:8px;font-size:13px;color:var(--blue);font-weight:600">
+              ● Now running automatically — 4x daily
+            </div>
+          </div>
+        </div>
+      `
+    },
+    {
+      id: 'collections',
+      icon: '💰', iconCls: 'red',
+      name: 'Collections Follow-Up',
+      desc: 'Follows up on unpaid invoices to recover revenue',
+      status: 'live', statusLabel: '● LIVE',
+      statVal: '$1640540', statLabel: 'being recovered',
+      body: `
+        <div class="opportunity-panel">
+          <div style="font-weight:700;font-size:14px;margin-bottom:12px">🥉 Bronze Priority — Revenue Recovery</div>
+          <div class="opp-row"><div class="opp-label">Overdue Invoices</div><div><span class="opp-val">164</span></div></div>
+          <div class="opp-row"><div class="opp-label">Total Outstanding</div><div><span class="opp-val" style="color:var(--red)">$179,512</span></div></div>
+          <div class="opp-row"><div class="opp-label">📞 Calls Made (This Week)</div><div><span class="opp-val" style="color:var(--green)">14</span></div></div>
+          <div class="opp-row"><div class="opp-label">Claire's Role</div><div style="font-size:13px;text-align:right">Call → Remind → Confirm payment intent</div></div>
+
+          <div style="margin-top:16px">
+            <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Calls Attempted</div>
+            <div id="collections-progress-wrap" style="background:#f3f4f6;border-radius:8px;height:18px;overflow:hidden;margin-bottom:6px">
+              <div id="collections-progress-bar" style="height:100%;background:var(--red);border-radius:8px;transition:width 0.5s;width:0%"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted)">
+              <span id="collections-called">Loading...</span>
+              <span>164 total</span>
+            </div>
+          </div>
+
+          <div style="margin-top:12px;padding:12px;background:var(--red-light);border-radius:8px;font-size:13px;color:var(--red);font-weight:600">
+            ● Now running automatically — 4x daily (8 AM – 8 PM)
+          </div>
+        </div>
+      `
+    },
+    {
+      id: 'pm',
+      icon: '🛠️', iconCls: 'green',
+      name: 'PM Plan Scheduling',
+      desc: 'Books preventive maintenance visits with existing customers',
+      status: 'live', statusLabel: '● LIVE',
+      statVal: '269', statLabel: 'active PM plans',
+      body: `
+        <div class="opportunity-panel">
+          <div class="opp-row"><div class="opp-label">Total PM Plans</div><div><span class="opp-val">269</span></div></div>
+          <div class="opp-row"><div class="opp-label">Unscheduled Visits</div><div><span class="opp-val" style="color:var(--yellow)">45</span></div></div>
+          <div class="opp-row"><div class="opp-label">Visit Value</div><div><span class="opp-val">$60,054</span></div></div>
+          <div class="opp-row"><div class="opp-label">Claire's Role</div><div style="font-size:13px;text-align:right">Confirms appointments, handles rescheduling</div></div>
+          <div style="margin-top:12px;padding:12px;background:var(--green-light);border-radius:8px;font-size:13px;color:var(--green);font-weight:600">
+            ✅ Claire is actively handling PM calls — live and working
+          </div>
+        </div>
+      `
+    },
+    {
+      id: 'reporting',
+      icon: '📊', iconCls: 'purple',
+      name: 'Daily Operations Reporting',
+      desc: 'Automated executive dashboard delivered every morning',
+      status: 'live', statusLabel: '● LIVE',
+      statVal: '5AM', statLabel: 'daily delivery',
+      body: `
+        <div class="opportunity-panel">
+          <div class="opp-row"><div class="opp-label">Delivery Time</div><div><span class="opp-val">5:00 AM daily</span></div></div>
+          <div class="opp-row"><div class="opp-label">Recipients</div><div style="font-size:13px">Jason Holder, Bobby Hunter, Dennis Wright</div></div>
+          <div class="opp-row"><div class="opp-label">Includes</div><div style="font-size:13px;text-align:right">Jobs, Leads, PM Plans, Estimates, Pipeline</div></div>
+          <div class="opp-row"><div class="opp-label">Format</div><div><span class="badge badge-purple">Interactive HTML</span></div></div>
+          <div style="margin-top:12px;padding:12px;background:var(--purple-light);border-radius:8px;font-size:13px;color:var(--purple);font-weight:600">
+            ✅ Live since June 10, 2026 — delivered daily automatically
+          </div>
+        </div>
+      `
+    },
+  ];
+
+  document.getElementById('task-grid').innerHTML = tasks.map(t => `
+    <div class="task-card" id="task-${t.id}">
+      <div class="task-header" onclick="toggleTask('${t.id}')">
+        <div class="task-icon ${t.iconCls}">${t.icon}</div>
+        <div class="task-info">
+          <div class="task-name">${t.name}</div>
+          <div class="task-desc">${t.desc}</div>
+        </div>
+        <div class="task-right">
+          <div class="task-stat">
+            <div class="task-stat-val">${t.statVal}</div>
+            <div class="task-stat-label">${t.statLabel}</div>
+          </div>
+          <span class="status-badge ${t.status === 'live' ? 'status-live' : 'status-soon'}">${t.statusLabel}</span>
+          <span class="chevron">▼</span>
+        </div>
+      </div>
+      <div class="task-body">${t.body}</div>
+    </div>
+  `).join('');
+}
+
+function toggleTask(id) {
+  document.getElementById(`task-${id}`).classList.toggle('open');
+}
+
+const PIPELINE_DATA = {"generated_at":"2026-06-11T15:46:38.476714+00:00","total_jobs":5956,"active_jobs":1587,"active_pipeline_value":1646716.83,"completed_revenue":5093278.32,"total_outstanding_invoices":0.0,"pipeline":[{"status":"needs scheduling","label":"New / Unscheduled","count":748,"revenue":867127.34,"outstanding":437920.64},{"status":"scheduled","label":"Scheduled","count":439,"revenue":563527.86,"outstanding":274915.27},{"status":"in progress","label":"In Progress","count":400,"revenue":216061.63,"outstanding":68336.7},{"status":"complete unrated","label":"Completed","count":1130,"revenue":1355477.3,"outstanding":66185.27},{"status":"complete rated","label":"Completed (Rated)","count":2508,"revenue":3737801.02,"outstanding":128058.69},{"status":"pro canceled","label":"Canceled","count":587,"revenue":983211.8,"outstanding":970587.53},{"status":"user canceled","label":"Canceled by Customer","count":144,"revenue":147649.49,"outstanding":137081.49}],"invoices":[{"status":"none","label":"No Invoice","count":5956,"outstanding":2083085.59}]};
+
+async function loadPipeline() {
+  try {
+    const d = PIPELINE_DATA;
+
+    const stageColors = {
+      'needs scheduling': '#1a56db',
+      'scheduled': '#0e9f6e',
+      'in progress': '#f59e0b',
+      'complete unrated': '#7c3aed',
+      'complete rated': '#7c3aed',
+      'pro canceled': '#9ca3af',
+      'user canceled': '#9ca3af',
+    };
+
+    const activeStages = ['needs scheduling','scheduled','in progress'];
+    const activeTotal = d.pipeline
+      .filter(s => activeStages.includes(s.status))
+      .reduce((a,s) => a + s.revenue, 0);
+
+    const rows = d.pipeline
+      .filter(s => !s.status.includes('canceled'))
+      .map(s => {
+        const color = stageColors[s.status] || '#9ca3af';
+        return `
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+            <div style="width:12px;height:12px;border-radius:50%;background:${color};flex-shrink:0"></div>
+            <div style="flex:1;font-size:14px;font-weight:600">${s.label}</div>
+            <div style="text-align:right">
+              <div style="font-weight:800;font-size:15px">${s.count.toLocaleString()} jobs</div>
+              <div style="font-size:12px;color:var(--text-muted)">$${s.revenue.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</div>
+            </div>
+          </div>`;
+      }).join('');
+
+    const updated = new Date(d.generated_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+
+    document.getElementById('pipeline-section').innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <div>
+          <span style="font-size:22px;font-weight:800;color:var(--blue)">${d.active_jobs.toLocaleString()}</span>
+          <span style="font-size:13px;color:var(--text-muted);margin-left:6px">active jobs</span>
+          <span style="margin:0 10px;color:var(--border)">|</span>
+          <span style="font-size:22px;font-weight:800;color:var(--orange)">$${(activeTotal).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span>
+          <span style="font-size:13px;color:var(--text-muted);margin-left:6px">active pipeline</span>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted)">Snapshot: ${updated}</div>
+      </div>
+      ${rows}
+    `;
+  } catch(e) {
+    document.getElementById('pipeline-section').innerHTML = `<div style="color:var(--gray);font-size:13px;padding:8px">Pipeline data unavailable</div>`;
+  }
+}
+
+async function load() {
+  try {
+    const calls = await fetchCalls();
+    document.getElementById('stats-grid').innerHTML = buildStats(calls).map(s =>
+      `<div class="stat-card ${s.cls}"><div class="stat-icon">${s.icon}</div><div class="stat-value">${s.value}</div><div class="stat-label">${s.label}</div><div class="stat-sub">${s.sub}</div></div>`
+    ).join('');
+    buildChart(calls);
+    buildTasks(calls);
+    await loadPipeline();
+    await loadCollectionsProgress();
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    document.getElementById('last-updated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+    // Auto-open inbound calls
+    document.getElementById('task-inbound').classList.add('open');
+  } catch(e) {
+    document.getElementById('loading').innerHTML = `<div style="color:#dc2626;padding:20px">⚠️ ${e.message}</div>`;
+  }
+}
+
+async function loadCollectionsProgress() {
+  try {
+    const res = await fetch(`https://api.vapi.ai/call?assistantId=43e195b4-7eba-425a-ad85-58f12e9776c0&limit=250`, {
+      headers: { 'Authorization': `Bearer ${VAPI_KEY}` }
+    });
+    const data = await res.json();
+    const calls = Array.isArray(data) ? data : (data.calls || []);
+    const total = 164;
+    const attempted = calls.length;
+    const connected = calls.filter(c => c.endedReason === 'customer-ended-call' || c.endedReason === 'assistant-forwarded-call').length;
+    const pct = Math.min(Math.round((attempted / total) * 100), 100);
+
+    const bar = document.getElementById('collections-progress-bar');
+    const label = document.getElementById('collections-called');
+    if (bar) bar.style.width = pct + '%';
+    if (label) label.textContent = `${attempted} called · ${connected} connected (${pct}%)`;
+  } catch(e) {
+    const label = document.getElementById('collections-called');
+    if (label) label.textContent = 'Progress unavailable';
+  }
+}
+
+load();
+setInterval(load, 5 * 60 * 1000);
+</script>
+</body>
+</html>
